@@ -14,7 +14,7 @@
    If you are using native-coq instead of Coq 8.9, replace it with:
      Require Import SMTCoq.
    *)
-   Add Rec LoadPath "/home/arjun/Desktop/smtcoq/arjunvish-smtcoq-veritAst/smtcoq/src" as SMTCoq.
+   Add Rec LoadPath "../../../src" as SMTCoq.
 
    Require Import SMTCoq.SMTCoq.
    Require Import Bool.
@@ -28,5 +28,5 @@
    Local Open Scope int63_scope.
    
    Section CongP.
-     Verit_Checker "/home/arjun/Desktop/smtcoq/arjunvish-smtcoq-veritAst/smtcoq/examples/aletheTests/testcong/congand.smt2" "/home/arjun/Desktop/smtcoq/arjunvish-smtcoq-veritAst/smtcoq/examples/aletheTests/testcong/congand.pf".
+     Verit_Checker "congand.smt2" "congand.pf".
    End CongP.
