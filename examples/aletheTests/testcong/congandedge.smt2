@@ -12,6 +12,6 @@
 (assert (= b y))
 (assert (= c z))
 (assert (= d w))
-(assert (not (= (and a b j c d) (and x w y z j))))
+(assert (not (= (and a b j c d) (and x y j z w))))
 (check-sat)
 (exit)

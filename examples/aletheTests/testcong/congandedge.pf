@@ -2,6 +2,6 @@
 (assume h2 (= b y))
 (assume h3 (= c z))
 (assume h4 (= d w))
-(assume h5 (not (= (and a b j c d) (and x w y z j))))
-(step t6 (cl (= (and a b j c d) (and x w y z j))) :rule cong :premises (h1 h2 h3 h4))
+(assume h5 (not (= (and a b j c d) (and x y j z w))))
+(step t6 (cl (= (and a b j c d) (and x y j z w))) :rule cong :premises (h1 h2 h3 h4))
 (step t7 (cl) :rule resolution :premises (h5 t6))

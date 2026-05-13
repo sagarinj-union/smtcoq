@@ -28,5 +28,5 @@
    Local Open Scope int63_scope.
    
    Section CongP.
-     Verit_Checker "congand.smt2" "congand.pf".
+     Verit_Checker "congandedge.smt2" "congandedge.pf".
    End CongP.
