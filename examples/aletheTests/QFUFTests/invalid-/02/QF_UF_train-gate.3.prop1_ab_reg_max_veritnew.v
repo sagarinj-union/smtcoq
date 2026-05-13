@@ -1,0 +1,6 @@
+Add Rec LoadPath "../../../../../src/" as SMTCoq.
+Require Import SMTCoq.SMTCoq.
+Require Import Bool.
+Section Benchmark.
+  Verit_Checker "QF_UF_train-gate.3.prop1_ab_reg_max.smt2" "QF_UF_train-gate.3.prop1_ab_reg_max_veritnew.pf".
+End Benchmark.
