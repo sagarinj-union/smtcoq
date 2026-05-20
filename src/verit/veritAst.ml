@@ -1528,12 +1528,14 @@ let process_cong (c : certif) : certif =
                               let resi1 = generate_id () in
                               let andpi = generate_id () in
                               let resi2 = generate_id () in
-                              let ind = string_of_int (findi (term_eq y) ys ("Line 1531 with peq: " ^ (string_of_term peq) ^ ", xs: " ^ (string_of_term_list xs) ^ ", ys: " ^ (string_of_term_list ys) ^ ", x: " ^ (string_of_term x) ^ ", and y: " ^ (string_of_term y) ^ ", with implicit args from id: " ^ i)) in
+                              let ind, first_try = (try (string_of_int (findi (term_eq y) ys ("Line 1531 with peq: " ^ (string_of_term peq) ^ ", xs: " ^ (string_of_term_list xs) ^ ", ys: " ^ (string_of_term_list ys) ^ ", x: " ^ (string_of_term x) ^ ", and y: " ^ (string_of_term y) ^ ", with implicit args from id: " ^ i)), true) with
+                              | Debug _ ->  (string_of_int (findi (term_eq y) xs ("Line 1532 with peq: " ^ (string_of_term peq) ^ ", xs: " ^ (string_of_term_list xs) ^ ", ys: " ^ (string_of_term_list ys) ^ ", x: " ^ (string_of_term x) ^ ", and y: " ^ (string_of_term y) ^ ", with implicit args from id: " ^ i)), false)) in
+                              let new_ys = if first_try then ys else xs in
                               (resi2 :: ris, 
                                (eqp1i, Equp1AST, [Not peq; x; Not y], [], []) :: 
                                (resi1, ResoAST, [x; Not y], [eqp1i; pid], []) :: 
-                               (andpi, AndpAST, [Not (And ys); y], [], [ind]) ::
-                               (resi2, ResoAST, [Not (And ys); x], [resi1; andpi], []) :: rs))
+                               (andpi, AndpAST, [Not (And new_ys); y], [], [ind]) ::
+                               (resi2, ResoAST, [Not (And new_ys); x], [resi1; andpi], []) :: rs))
                           ([], []) ptuples in
                         (* 3. resolve all clauses form 1. and 2. to get ~(y1 ^ ... ^ ym), x1 ^ ... ^ xn *)
                         let resi1 = generate_id () in
@@ -1564,12 +1566,14 @@ let process_cong (c : certif) : certif =
                               let resi1 = generate_id () in
                               let andpi = generate_id () in
                               let resi2 = generate_id () in
-                              let ind = string_of_int (findi (term_eq x) xs "Line 1544") in
+                              let ind, first_try = try (string_of_int (findi (term_eq x) xs "Line 1568"), true) with
+                            | Debug _ -> string_of_int (findi (term_eq x) ys ""), false in
+                            let new_xs = if first_try then xs else ys in
                               (resi2 :: ris, 
                                (eqp2i, Equp2AST, [Not peq; Not x; y], [], []) :: 
                                (resi1, ResoAST, [Not x; y], [eqp2i; pid], []) :: 
-                               (andpi, AndpAST, [Not (And xs); x], [], [ind]) ::
-                               (resi2, ResoAST, [Not (And xs); y], [resi1; andpi], []) :: rs))
+                               (andpi, AndpAST, [Not (And new_xs); x], [], [ind]) ::
+                               (resi2, ResoAST, [Not (And new_xs); y], [resi1; andpi], []) :: rs))
                           ([], []) ptuples in
                         (* 8. resolve all clauses form 6. and 7. to get ~(x1 ^ ... ^ xn), y1 ^ ... ^ ym *)
                         let resi3 = generate_id () in
@@ -5291,7 +5295,7 @@ let preprocess_certif (c: certif) : certif =
   (* Printf.printf ("Certif before preprocessing: \n%s\n") (string_of_certif c); *)
   try 
   (let c1 = store_shared_terms c in
-  (*Printf.printf ("Certif after storing shared terms: \n%s\n") (string_of_certif c1);*)
+  Printf.printf ("Certif after storing shared terms: \n%s\n") (string_of_certif c1);
   let c2 = process_fins c1 in
   (*Printf.printf ("Certif after process_fins: \n%s\n") (string_of_certif c2);*)
   let c3 = process_hole c2 in
@@ -5301,7 +5305,7 @@ let preprocess_certif (c: certif) : certif =
   let c5 = process_same c4 in
   (*Printf.printf ("Certif after process_same: \n%s\n") (string_of_certif c5);*)
   let c6 = process_cong c5 in
-  (* Printf.printf ("Certif after process_cong: \n%s\n") (string_of_certif c6); *)
+  Printf.printf ("Certif after process_cong: \n%s\n") (string_of_certif c6);
   let c7 = process_trans c6 in
   (* Printf.printf ("Certif after process_trans: \n%s\n") (string_of_certif c7); *)
   let c8 = process_simplify c7 in
