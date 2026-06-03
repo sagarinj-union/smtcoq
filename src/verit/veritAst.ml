@@ -975,10 +975,9 @@ let rec process_notnot (c : certif) : certif =
 
 let rec replace_prem (x : id) (y : id) (c : certif) : certif =
    match c with
-   | (i, SubproofAST subcl, cl, p, a) :: tl -> 
+   (*| (i, SubproofAST subcl, cl, p, a) :: tl -> 
       let newprems = (replace x y p) in
-      let newtail = (replace_prem x y tl) in
-      (i, SubproofAST (replace_prem x y subcl), cl, newprems, a) :: newtail
+      (i, SubproofAST (replace_prem x y subcl), cl, newprems, a) :: (replace_prem x y tl)*)
    | (i, r, cl, p, a) :: tl -> 
       (i, r, cl, (replace x y p), a) :: (replace_prem x y tl)
    | [] -> []
@@ -1147,16 +1146,48 @@ let cong_find_implicit_args (i: id) (ft : term) (p : params) (cog : certif) : (s
                      in f fxas_isfrms fyas_isfrms p_ids_eqs
    | _ -> raise (Debug ("| cong_find_implicit_args: expecting head of clause to be an equality at id "^i^" |"))
 
+let gen_sym (id0 : id) (t : term) (c : certif) : (certif * id * term) =
+  match term with
+  | Eq (x, y) ->
+    let id1 = generate_id () in
+    let id2 = generate_id () in
+    let id3 = generate_id () in
+    let id4 = generate_id () in
+    let id5 = generate_id () in
+    let id6 = generate_id () in
+    let id7 = generate_id () in
+    let id8 = generate_id () in
+    let id9 = generate_id () in
+    (id1, Equp2Ast, [(Not (Eq (x, y))); (Not x); y], [], []) ::
+    (id2, ResoAST, [(Not x); y], [id0; id1], []) ::
+    (id3, Equp1AST, [(Not (Eq (x, y))); x; (Not y)], [], []) ::
+    (id4, ResoAST, [x; (Not y)], [id0; id3], []) ::
+    (id5, Equn2AST, [(Eq (y, x)); y, x], [], []) ::
+    (id6, ResoAST, [(Eq (y, x)); y], [id2; id5], []) ::
+    (id7, Equn1AST, [(Eq (y, x)); (Not y); (Not x)], [], []) ::
+    (id8, ResoAST, [(Eq (y, x)); (Not y)], [id4; id7], []) ::
+    (id9, ResoAST, [(Eq (y, x))], [id6, id8], []) @ c,
+    id9, (Eq (y, x))
+  | _ -> raise Debug ("Expected equality")
+
+let rec process_ptuples (ptuples : (id * term) list) (xs : term list) (c : certif) : (((id * term) list) * certif) =
+  match ptuples with 
+  | (id0, Eq (x, y)) :: t -> if (List.exist (term_eq y) xs) then let new_t, new_c = (process_ptuples t xs c) in (((id0, Eq (x, y)) :: new_t), new_c) else 
+    let new_c, new_id, new_term = (gen_sym id0 (Eq (x, y)), c) in let new_t, new_c = (process_ptuples t xs new_c) in (((new_id, new_term) :: new_t), new_c)
+  | _ -> (ptuples, c)
+
 let process_cong (c : certif) : certif =
   let rec process_cong_aux (c : certif) (cog : certif) : certif = 
    match c with
     | (i, CongAST, cl, p, a) :: t ->
+        (*let cog = process_sym cog p cl in*)
         (* To differentiate between the predicate and function case, we need to process
            the clause because we treat equality and iff as the same at the AST level *)
         let c' = try process_cl cl with
                  | Form.NotWellTyped frm -> raise (Debug ("| process_cong: formula "^
                     (Form.pform_to_string frm)^" is not well-typed at id "^i^" |"))
                  | Debug s -> raise (Debug ("| VeritAst.process_certif: can't process clause at id "^i^" |"^s)) in
+        
         (match c' with
           | l :: _ ->
             (match cl with
@@ -1504,6 +1535,7 @@ let process_cong (c : certif) : certif =
                          Under both trees, if a premise is a reflexivity, then the derivation from it using eqp1/2, andp and res must be shortened just to an andp
                      *)
                      | Eq (And xs, And ys) ->
+                        let ptuples, c = (process_ptuples ptuples xs, c) in
                         (* For x1 ^ ... ^ xn = y1 ^ ... ^ ym in the conclusion, *)
                         (* 1. generate x1 ^ ... ^ xn, ~x1, ..., ~xn by andn *)
                         let andni1 = generate_id () in
@@ -1666,6 +1698,7 @@ let process_cong (c : certif) : certif =
                                                                                                               x v y = a v b, ~(a v b) --(2)
                      *)
                      | Eq (Or xs, Or ys) ->
+                      let ptuples, c = (process_ptuples ptuples xs c)
                         (* For `x1 v ... v xn = y1 v ... v ym` in the conclusion, *)
                         (* 1. generate `~(x1 v ... v xn), x1, ..., xn` by `orp` *)
                         let orpi1 = generate_id () in
