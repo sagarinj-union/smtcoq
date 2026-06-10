@@ -495,7 +495,8 @@ let rec fins_lemma ids_params =
    a is the first occurrence of c in the list of clauses represented by l
    b is l without a *)
 let find_remove_lemma lemma ids_params =
-  let eq_lemma h = eq_clause lemma (get_clause h) in
+  let eq_lemma h = (try eq_clause lemma (get_clause h) with | Debug s -> raise (Debug ("| line 499 | " ^ s)))
+  in
   list_find_remove eq_lemma ids_params
 
 (* Removes the lemma in a list of ids containing an instance of this lemma *)
@@ -603,7 +604,7 @@ let mk_clause (id,typ,value,ids_params,args) =
       | Taut -> 
         (match ids_params with
           | [i] -> (match value with
-                    | l :: nil -> Other (Tautology ((get_clause i), l))
+                    | l :: nil -> (try (Other (Tautology ((get_clause i), l))) with | Debug s -> raise (Debug ("| get_clause line 608 | " ^ s)))
                     | _ -> raise (Debug ("| VeritSyntax.mk_clause: tautology expects singleton clause at id "^id^" |")))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: tautology expects single premise at id "^id^" |")))
       | Andn | Orp | Impp | Xorp1 | Xorn1 | Equp1 | Equn1 | Itep1 | Iten1 ->
@@ -628,35 +629,35 @@ let mk_clause (id,typ,value,ids_params,args) =
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting non-empty clause at id "^id^" |")))
       | Nand | Imp | Xor1 | Nxor1 | Equ2 | Nequ2 | Ite1 | Nite1 ->
         (match ids_params with
-          | [i] -> Other (ImmBuildDef (get_clause i))
+          | [i] -> (try (Other (ImmBuildDef (get_clause i))) with | Debug s -> raise (Debug ("| get_clause line 633 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise at id "^id^" |")))
       | Or ->
          (match ids_params with
             | [id_target] ->
-               let cl_target = get_clause id_target in
+               let cl_target = (try (get_clause id_target) with Debug s -> raise (Debug ("| get_clause line 638 | " ^ s))) in
                begin match cl_target.kind with
                  | Other (Forall_inst _) -> Same cl_target
                  | _ -> Other (ImmBuildDef cl_target) end
             | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise at id "^id^" |")))
       | Xor2 | Nxor2 | Equ1 | Nequ1 | Ite2 | Nite2 ->
         (match ids_params with
-          | [i] -> Other (ImmBuildDef2 (get_clause i))
+          | [i] -> (try Other (ImmBuildDef2 (get_clause i)) with Debug s -> raise (Debug ("| get_clause line 645 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise at id "^id^" |")))
       | And | Nor ->
         (match ids_params, args with
-          | [i], [p] -> Other (ImmBuildProj ((get_clause i),(int_of_string p)))
+          | [i], [p] -> (try Other (ImmBuildProj ((get_clause i),(int_of_string p))) with Debug s -> raise (Debug ("| get_clause line 649 | " ^ s)))
           | _, _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise and one argument at id "^id^" |")))
       | Nimp1 ->
         (match ids_params with
-          | [i] -> Other (ImmBuildProj (get_clause i,0))
+          | [i] -> (try Other (ImmBuildProj (get_clause i,0)) with Debug s -> raise (Debug ("| get_clause line 653 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise at id "^id^" |")))
       | Nimp2 ->
         (match ids_params with
-          | [i] -> Other (ImmBuildProj (get_clause i,1))
+          | [i] -> (try Other (ImmBuildProj (get_clause i,1)) with Debug s -> raise (Debug ("| get_clause line 657 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting exactly one premise at id "^id^" |")))
       | Acsimp ->
         (match ids_params, value with
-        | [i], [v] -> Other (ImmFlatten(get_clause i, v))
+        | [i], [v] -> (try Other (ImmFlatten(get_clause i, v)) with Debug s -> raise (Debug ("| get_clause line 638 | " ^ s)))
         | _ -> raise (Debug ("| VeritSyntax.mk_clause: expecting singleton clause and exactly one premise at id "^id^" |")))
       (* From cvc5 *)
       | Allsimp ->
@@ -681,46 +682,46 @@ let mk_clause (id,typ,value,ids_params,args) =
       | Sumsimp | Compsimp | Arithpolynorm | LiaRewrite 
       | Lamulpos | Lamulneg -> mkMicromega value
       (* Holes in proofs *)
-      | Hole -> Other (SmtCertif.Hole (List.map get_clause ids_params, value))
+      | Hole -> (try Other (SmtCertif.Hole (List.map get_clause ids_params, value)) with | Debug s -> raise (Debug ("| get_clause line 686 | " ^ s)))
       (* Resolution *)
       | Threso -> 
         let ids_params = merge (List.rev ids_params) in
          (match ids_params with
             | cl1::cl2::q ->
-               let res = {rc1 = get_clause cl1;
-                          rc2 = get_clause cl2;
-                          rtail = List.map get_clause q} in
+               let res = {rc1 = (try (get_clause cl1) with | Debug s -> raise (Debug ("| get_clause line 692 | " ^ s)));
+                          rc2 = (try (get_clause cl2) with | Debug s -> raise (Debug ("| get_clause line 693 | " ^ s)));
+                          rtail = (try (List.map get_clause q) with | Debug s -> raise (Debug ("| get_clause line 694 | " ^ s)))} in
                Res res
-            | [fins_id] -> Same (get_clause fins_id)
+            | [fins_id] -> (try Same (get_clause fins_id) with Debug s -> raise (Debug ("| get_clause line 696 | " ^ s)))
             | [] -> raise (Debug ("| VeritSyntax.mk_clause: expecting at least one premise for theory resolution at id "^id^" |")))
       | Reso ->
          let ids_params = merge ids_params in
          (match ids_params with
             | cl1::cl2::q ->
-               let res = {rc1 = get_clause cl1;
-                          rc2 = get_clause cl2;
-                          rtail = List.map get_clause q} in
+               let res = {rc1 = (try get_clause cl1 with | Debug s -> raise (Debug ("| get_clause line 701 | " ^ s)));
+                          rc2 = (try get_clause cl2 with | Debug s -> raise (Debug ("| get_clause line 702 | " ^ s)));
+                          rtail = (try List.map get_clause q with | Debug s -> raise (Debug ("| get_clause line 703 | " ^ s)))} in
                Res res
-            | [fins_id] -> Same (get_clause fins_id)
+            | [fins_id] -> (try Same (get_clause fins_id) with Debug s -> raise (Debug ("| get_clause line 706 | " ^ s)))
             | [] -> raise (Debug ("| VeritSyntax.mk_clause: expecting at least one premise for resolution at id "^id^" |")))
       (* Quantifiers *)
       | Fins ->
         (match value, ids_params with
          | [inst], [ref_th] ->
-            let cl_th = get_clause ref_th in
+            let cl_th = (try get_clause ref_th with Debug s -> raise (Debug ("| get_clause line 712 | " ^ s))) in
             Other (Forall_inst (repr cl_th, inst))
          | _ -> raise (Debug ("| VeritSyntax.mk_clause: unexpected form of forall_inst at id "^id^" |")))
       | Same ->
         (match ids_params with
-         | [i] -> Same (get_clause i)
+         | [i] -> (try Same (get_clause i) with Debug s -> raise (Debug ("| get_clause line 717 | " ^ s)))
          | _ -> raise (Debug ("| VeritSyntax.mk_clause: unexpected form of Same, might be caused by bind subproof at id "^id^" |")))
       | Weaken -> 
         (match ids_params with
-          | [i] -> Other (Weaken ((get_clause i), value))
+          | [i] -> (try Other (Weaken ((get_clause i), value)) with Debug s -> raise (Debug ("| get_clause line 721 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: unexpected form of Weaken, expected exactly one premise at id "^id^" |")))
       | Flatten ->
         (match ids_params, value with
-          | [i], [v] -> Other(ImmFlatten ((get_clause i), v))
+          | [i], [v] -> (try Other(ImmFlatten ((get_clause i), v)) with Debug s -> raise (Debug ("| get_clause line 725 | " ^ s)))
           | _ -> raise (Debug ("| VeritSyntax.mk_clause: unexpected form of Flatten, expected exactly one premise at id "^id^" |")))
       (* Not implemented *)
       | Bind -> raise (Debug ("| VeritSyntax.mk_clause: unimplemented rule bind at id "^id^" |"))
